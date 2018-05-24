@@ -4,6 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +19,7 @@ import android.view.MenuItem;
 
 import com.example.forrest.popularmovies.Utils.Constants;
 import com.example.forrest.popularmovies.Utils.NetworkUtils;
+import com.example.forrest.popularmovies.Utils.TMDBJsonLoader;
 import com.example.forrest.popularmovies.Utils.TMDBJsonUtils;
 
 import org.json.JSONException;
@@ -25,7 +31,9 @@ import java.util.ArrayList;
 /**
  * This is the activity that shows the list of Movies (posters)
  */
-public class MainActivity extends AppCompatActivity implements MoviesAdapter.MoviesAdapterOnClickHandler {
+public class MainActivity extends AppCompatActivity
+        implements MoviesAdapter.MoviesAdapterOnClickHandler,
+        LoaderManager.LoaderCallbacks<String> {
 
     private static final String TAG = "PopularMovies";
 
@@ -40,6 +48,12 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
     /* Determine the sort order of the movie list */
     private String mSortBy = Constants.ORDER_TOP_RATED;
+
+    private static final String SORT_BY_EXTRA = "sort_by";
+
+    private static final String TMDB_URL_EXTRA = "db_url";
+
+    private static final int TMDB_JSON_LOADER = 25;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,9 +71,29 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
         mMoviesListRv.setAdapter(mAdapter);
 
-        updateMovieList();
+        if (savedInstanceState != null) {
+            this.mSortBy = savedInstanceState.getString(SORT_BY_EXTRA);
+        }
+
+        /* Load the data */
+        URL url;
+        if (mSortBy.equals(Constants.ORDER_TOP_RATED))
+            url = NetworkUtils.getTopRatedMoviesUrl();
+        else
+            url = NetworkUtils.getPopularMoviesUrl();
+
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(TMDB_URL_EXTRA, url);
+        getSupportLoaderManager().initLoader(TMDB_JSON_LOADER, bundle, this);
+
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString(SORT_BY_EXTRA, mSortBy);
+    }
 
     /**
      * Handles click event in movie posters.
@@ -111,57 +145,60 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
      * update the RecyclerView adapter with the new data.
      */
     private void updateMovieList() {
-        /* Execute the AsyncTask that will fetch the movies list. */
-        new FetchMoviesTask().execute(mSortBy);
+        LoaderManager loaderManager = getSupportLoaderManager();
+        Loader<String> tmdbJsonLoader = loaderManager.getLoader(TMDB_JSON_LOADER);
+        URL url;
+        if (mSortBy.equals(Constants.ORDER_TOP_RATED))
+            url = NetworkUtils.getTopRatedMoviesUrl();
+        else
+            url = NetworkUtils.getPopularMoviesUrl();
+
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(TMDB_URL_EXTRA, url);
+
+        if (tmdbJsonLoader == null) {
+            loaderManager.initLoader(TMDB_JSON_LOADER, bundle, this);
+        } else {
+            loaderManager.restartLoader(TMDB_JSON_LOADER, bundle, this);
+        }
     }
 
 
 
-    /**
-     * AsyncTask to fetch the movies data.
-     */
-    public class FetchMoviesTask extends AsyncTask<String, Void, ArrayList<Movie>> {
+/*=============================== LoaderCallbacks ===============================*/
+    @NonNull
+    @Override
+    public Loader<String> onCreateLoader(int id, @Nullable final Bundle args) {
 
-        @Override
-        protected ArrayList<Movie> doInBackground(String... order) {
+        URL url = (URL) args.getSerializable(TMDB_URL_EXTRA);
 
-            URL url;
-            if(order[0].equals(Constants.ORDER_POPULAR)) {
-                /* Get the URL for Popular Movies list. */
-                url = NetworkUtils.getPopularMoviesUrl();
-            } else {
-                /* Get the URl for Top Rated Movies list. */
-                url = NetworkUtils.getTopRatedMoviesUrl();
-            }
+        return new TMDBJsonLoader(this, url);
+    }
 
+    @Override
+    public void onLoadFinished(@NonNull Loader<String> loader, String data) {
+        /* If we got data, update to adapter. */
+        if (data != null) {
             ArrayList<Movie> moviesList = null;
-
             try {
-                /* Get Json from server. */
-                String jsonMoviesResponse = NetworkUtils.getResponseFromHttpUrl(url);
-
-                /* Parse the Json int a list of Movie objects. */
-                moviesList = TMDBJsonUtils.getMoviesFromJsonList(jsonMoviesResponse);
-
-            } catch (IOException e) {
-                e.printStackTrace();
+                moviesList = TMDBJsonUtils.getMoviesFromJsonList(data);
+                mAdapter.setMoviesList(null);
+                Log.d(TAG, "Setting movie list with " + moviesList.size() + " movies");
+                mAdapter.setMoviesList(moviesList);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-            return moviesList;
         }
 
-
-        @Override
-        protected void onPostExecute(ArrayList<Movie> movies) {
-            /* If we got data, update to adapter. */
-            if (movies != null) {
-                mAdapter.setMoviesList(null);
-                Log.d(TAG, "Setting movie list with " + movies.size() + " movies");
-                mAdapter.setMoviesList(movies);
-            }
-        }
     }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<String> loader) {
+        /*
+         * We aren't using this method in our example application, but we are required to Override
+         * it to implement the LoaderCallbacks<String> interface
+         */
+    }
+/*============================= LoaderCallbacks End =============================*/
 
 }

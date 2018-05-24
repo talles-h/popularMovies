@@ -8,9 +8,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.forrest.popularmovies.Utils.Constants;
+import com.example.forrest.popularmovies.Utils.NetworkUtils;
 import com.squareup.picasso.Picasso;
 
 import java.util.Calendar;
+
+/** TODO Call TMDBJsonLoader and implement loader callbacks
+ * **/
 
 public class MovieActivity extends AppCompatActivity {
 
@@ -45,7 +49,8 @@ public class MovieActivity extends AppCompatActivity {
         if (mMovie != null) {
             Log.d(TAG, "Title = " + mMovie.getTitle());
             mTitleTv.setText(mMovie.getTitle());
-            Picasso.with(mPosterIv.getContext()).load(mMovie.getPosterPath()).into(mPosterIv);
+            String posterURL = NetworkUtils.buildPosterURL(mMovie.getPosterPath()).toString();
+            Picasso.with(mPosterIv.getContext()).load(posterURL).into(mPosterIv);
             mMovieDetailsTv.setText(buildMovieDetails());
             mSynopsisTv.setText(mMovie.getSynopsis());
         }

@@ -12,16 +12,41 @@ import java.util.Date;
  * poster, etc.
  */
 public class Movie implements Parcelable {
+
+    /* id */
     private String id;
+
+    /* title */
     private String mTitle;
-    private String mPosterPath;
-    private String mSynopsis;
-    private float mRating;
+
+    /* original_title */
+    private String mOriginalTitle;
+
+    /* release_date */
     private Date mReleaseDate;
-    private int mDuration;
+
+    /* runtime */
+    private int mDuration = -1;
+
+    /* poster_path or backdrop_path */
+    private String mPosterPath;
+
+    /* overview */
+    private String mSynopsis;
+
+    /* vote_average */
+    private float mRating = -1;
+
+    /* vote_count */
+    private int mVoteCount = -1;
+
+    /* popularity */
+    private float mPopularity = -1;
 
 
-    public Movie() {}
+    public Movie() {
+
+    }
 
     public Movie(Parcel in) {
         readFromParcel(in);

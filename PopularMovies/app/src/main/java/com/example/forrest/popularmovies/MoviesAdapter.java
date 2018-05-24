@@ -1,14 +1,14 @@
 package com.example.forrest.popularmovies;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
+
+import com.example.forrest.popularmovies.Utils.NetworkUtils;
 
 import com.squareup.picasso.Picasso;
 
@@ -92,9 +92,9 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
 
         /* Bind the poster image to the ImageView. */
         void bind(Movie movie) {
-            Log.d(TAG, "Binding movie path: " + movie.getPosterPath());
             /* Load movie poster image */
-            Picasso.with(mMovieImageView.getContext()).load(movie.getPosterPath()).into(mMovieImageView);
+            String posterURL = NetworkUtils.buildPosterURL(movie.getPosterPath()).toString();
+            Picasso.with(mMovieImageView.getContext()).load(posterURL).into(mMovieImageView);
         }
 
         /* Poster was clicked. */

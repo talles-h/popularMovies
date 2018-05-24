@@ -29,6 +29,20 @@ public class NetworkUtils {
         return url;
     }
 
+    public static URL buildPosterURL(String posterFile) {
+        Uri builtUri = Uri.parse(Constants.POSTER_BASE_URL + Constants.POSTER_SIZE + posterFile)
+                .buildUpon().build();
+
+        URL url = null;
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
     private static URL buildMovieDbURL(String path) {
         Uri builtUri = Uri.parse(Constants.MOVIE_DB_BASE_URL + path).buildUpon()
                 .appendQueryParameter(Constants.KEY_PARAM, Constants.API_KEY)
