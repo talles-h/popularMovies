@@ -17,7 +17,7 @@ public abstract class TMDBJsonUtils {
     private static final String TAG = TMDBJsonUtils.class.getSimpleName();
 
     public static ArrayList<Movie> getMoviesFromJsonList(String tmdbJsonStr) throws JSONException {
-        ArrayList<Movie> moviesArrayList = new ArrayList<Movie>();
+        ArrayList<Movie> moviesArrayList = new ArrayList<>();
 
         JSONObject tmdbJson = new JSONObject(tmdbJsonStr);
 
@@ -64,6 +64,57 @@ public abstract class TMDBJsonUtils {
         }
 
         return moviesArrayList;
+    }
+
+    public static Movie getMovieFromDetailsJson(String movieJson) throws JSONException {
+        JSONObject movieJsonObj = new JSONObject(movieJson);
+
+        /* Is there an error?
+         *  If there is STATUS_CODE means something went wrong */
+        if (movieJsonObj.has(Constants.STATUS_CODE)) {
+            Log.e(TAG, "ERROR: " + movieJson);
+            return null;
+        }
+
+        Movie movie = new Movie();
+
+        // Get movie ID
+        movie.setId(movieJsonObj.getString(Constants.ID));
+
+        /* Get title */
+        movie.setTitle(movieJsonObj.getString(Constants.TITLE));
+
+        /* Get original_title */
+        movie.setOriginalTitle(movieJsonObj.getString(Constants.ORIGINAL_TITLE));
+
+        /* Get release_date */
+        String dateStr = movieJsonObj.getString(Constants.RELEASE_DATE);
+        try {
+            Date date = (new SimpleDateFormat("yyyy-MM-dd")).parse(dateStr);
+            movie.setReleaseDate(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        /* Get runtime */
+        movie.setDuration(movieJsonObj.getInt(Constants.DURATION));
+
+        /* Get poster_path or backdrop_path */
+        movie.setPosterPath(movieJsonObj.getString(Constants.POSTER_PATH));
+
+        /* Get overview */
+        movie.setSynopsis(movieJsonObj.getString(Constants.SYNOPSIS));
+
+        /* Get vote_average */
+        movie.setRating(movieJsonObj.getDouble(Constants.RATING));
+
+        /* Get vote_count */
+        movie.setVoteCount(movieJsonObj.getInt(Constants.VOTE_COUNT));
+
+        /* Get popularity */
+        movie.setPopularity(movieJsonObj.getDouble(Constants.POPULARITY));
+
+        return movie;
     }
 
 }

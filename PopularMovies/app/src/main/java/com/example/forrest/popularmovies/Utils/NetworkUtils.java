@@ -43,6 +43,22 @@ public class NetworkUtils {
         return url;
     }
 
+    public static URL buildMovieDetailsURL(String movieId) {
+        Uri builtUri = Uri.parse(Constants.MOVIE_DB_BASE_URL + Constants.MOVIE_DB_MOVIE
+                + "/" + movieId)
+                .buildUpon()
+                .appendQueryParameter(Constants.KEY_PARAM, Constants.API_KEY)
+                .build();
+        URL url = null;
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
     private static URL buildMovieDbURL(String path) {
         Uri builtUri = Uri.parse(Constants.MOVIE_DB_BASE_URL + path).buildUpon()
                 .appendQueryParameter(Constants.KEY_PARAM, Constants.API_KEY)
@@ -57,6 +73,8 @@ public class NetworkUtils {
 
         return url;
     }
+
+
 
 
     /**

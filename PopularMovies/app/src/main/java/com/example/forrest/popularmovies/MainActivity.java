@@ -2,12 +2,10 @@ package com.example.forrest.popularmovies;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -24,7 +22,6 @@ import com.example.forrest.popularmovies.Utils.TMDBJsonUtils;
 
 import org.json.JSONException;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -39,9 +36,6 @@ public class MainActivity extends AppCompatActivity
 
     /* Number of columns in the grid */
     private static final int NUM_COLUMNS = 2;
-
-    /* Reference to RecyclerView */
-    private RecyclerView mMoviesListRv;
 
     /* RecyclerView Adapter */
     private MoviesAdapter mAdapter;
@@ -61,15 +55,15 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mMoviesListRv = (RecyclerView) findViewById(R.id.rv_movies_grid);
+        RecyclerView moviesListRv = findViewById(R.id.rv_movies_grid);
 
         GridLayoutManager layoutManager = new GridLayoutManager(this, NUM_COLUMNS);
-        mMoviesListRv.setLayoutManager(layoutManager);
+        moviesListRv.setLayoutManager(layoutManager);
 
         /* The Adapter is responsible for displaying each item in the list. */
         mAdapter = new MoviesAdapter(this);
 
-        mMoviesListRv.setAdapter(mAdapter);
+        moviesListRv.setAdapter(mAdapter);
 
         if (savedInstanceState != null) {
             this.mSortBy = savedInstanceState.getString(SORT_BY_EXTRA);
@@ -98,14 +92,14 @@ public class MainActivity extends AppCompatActivity
     /**
      * Handles click event in movie posters.
      * It will launch the activity with movie details.
-     * @param movie
+     * @param movie the movie clicked
      */
     @Override
     public void onClick(Movie movie) {
         Context context = this;
         Class destinationClass = MovieActivity.class;
         Intent intentMovieActivity = new Intent(context, destinationClass);
-        intentMovieActivity.putExtra(Constants.EXTRA_MOVIE, movie);
+        intentMovieActivity.putExtra(Constants.EXTRA_MOVIE_ID, movie.getId());
         startActivity(intentMovieActivity);
     }
 
@@ -146,7 +140,6 @@ public class MainActivity extends AppCompatActivity
      */
     private void updateMovieList() {
         LoaderManager loaderManager = getSupportLoaderManager();
-        Loader<String> tmdbJsonLoader = loaderManager.getLoader(TMDB_JSON_LOADER);
         URL url;
         if (mSortBy.equals(Constants.ORDER_TOP_RATED))
             url = NetworkUtils.getTopRatedMoviesUrl();
@@ -156,11 +149,7 @@ public class MainActivity extends AppCompatActivity
         Bundle bundle = new Bundle();
         bundle.putSerializable(TMDB_URL_EXTRA, url);
 
-        if (tmdbJsonLoader == null) {
-            loaderManager.initLoader(TMDB_JSON_LOADER, bundle, this);
-        } else {
-            loaderManager.restartLoader(TMDB_JSON_LOADER, bundle, this);
-        }
+        loaderManager.restartLoader(TMDB_JSON_LOADER, bundle, this);
     }
 
 
@@ -170,8 +159,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     public Loader<String> onCreateLoader(int id, @Nullable final Bundle args) {
 
-        URL url = (URL) args.getSerializable(TMDB_URL_EXTRA);
+        URL url = null;
 
+        if (args != null) {
+            url = (URL) args.getSerializable(TMDB_URL_EXTRA);
+        }
         return new TMDBJsonLoader(this, url);
     }
 
@@ -179,13 +171,13 @@ public class MainActivity extends AppCompatActivity
     public void onLoadFinished(@NonNull Loader<String> loader, String data) {
         /* If we got data, update to adapter. */
         if (data != null) {
-            ArrayList<Movie> moviesList = null;
+            ArrayList<Movie> moviesList;
             try {
                 moviesList = TMDBJsonUtils.getMoviesFromJsonList(data);
                 mAdapter.setMoviesList(null);
-                Log.d(TAG, "Setting movie list with " + moviesList.size() + " movies");
                 mAdapter.setMoviesList(moviesList);
             } catch (JSONException e) {
+                Log.d(TAG, "Error parsing JSON");
                 e.printStackTrace();
             }
         }

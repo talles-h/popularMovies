@@ -3,8 +3,6 @@ package com.example.forrest.popularmovies;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -35,13 +33,13 @@ public class Movie implements Parcelable {
     private String mSynopsis;
 
     /* vote_average */
-    private float mRating = -1;
+    private double mRating = -1;
 
     /* vote_count */
     private int mVoteCount = -1;
 
     /* popularity */
-    private float mPopularity = -1;
+    private double mPopularity = -1;
 
 
     public Movie() {
@@ -68,11 +66,11 @@ public class Movie implements Parcelable {
         this.mSynopsis = mSynopsis;
     }
 
-    public float getRating() {
+    public double getRating() {
         return mRating;
     }
 
-    public void setRating(float mRating) {
+    public void setRating(double mRating) {
         this.mRating = mRating;
     }
 
@@ -111,7 +109,7 @@ public class Movie implements Parcelable {
         dest.writeString(this.mTitle);
         dest.writeString(this.mPosterPath);
         dest.writeString(this.mSynopsis);
-        dest.writeFloat(this.mRating);
+        dest.writeDouble(this.mRating);
         if (this.mReleaseDate != null)
             dest.writeLong(this.mReleaseDate.getTime());
         else
@@ -126,7 +124,7 @@ public class Movie implements Parcelable {
         this.mTitle = in.readString();
         this.mPosterPath = in.readString();
         this.mSynopsis = in.readString();
-        this.mRating = in.readFloat();
+        this.mRating = in.readDouble();
         long date = in.readLong();
         if (date != -1)
             this.mReleaseDate = new Date(date);
@@ -137,8 +135,7 @@ public class Movie implements Parcelable {
     public static final Parcelable.Creator<Movie> CREATOR
             = new Parcelable.Creator<Movie>() {
         public Movie createFromParcel(Parcel in) {
-            Movie movie = new Movie(in);
-            return movie;
+            return new Movie(in);
         }
 
         public Movie[] newArray(int size) {
@@ -152,5 +149,29 @@ public class Movie implements Parcelable {
 
     public void setDuration(int mDuration) {
         this.mDuration = mDuration;
+    }
+
+    public String getOriginalTitle() {
+        return mOriginalTitle;
+    }
+
+    public void setOriginalTitle(String mOriginalTitle) {
+        this.mOriginalTitle = mOriginalTitle;
+    }
+
+    public int getVoteCount() {
+        return mVoteCount;
+    }
+
+    public void setVoteCount(int mVoteCount) {
+        this.mVoteCount = mVoteCount;
+    }
+
+    public double getPopularity() {
+        return mPopularity;
+    }
+
+    public void setPopularity(double mPopularity) {
+        this.mPopularity = mPopularity;
     }
 }

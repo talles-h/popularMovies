@@ -4,6 +4,8 @@ public class Constants {
 
     public static final String MOVIE_DB_BASE_URL = "http://api.themoviedb.org/3";
 
+    public static final String MOVIE_DB_MOVIE = "/movie";
+
     public static final String POPULAR_MOVIES_PATH = "/movie/popular";
 
     public static final String TOP_RATED_MOVIES_PATH = "/movie/top_rated";
@@ -12,9 +14,9 @@ public class Constants {
 
     public static final String KEY_PARAM = "api_key";
 
-    public static final String API_KEY = "72b5968aec961fa49c8e7455a1f92623";
+    public static final String API_KEY = "";
 
-    public static final String EXTRA_MOVIE = "movie_obj";
+    public static final String EXTRA_MOVIE_ID = "movie_obj";
 
     public static final String ORDER_POPULAR = "popular";
 
@@ -29,7 +31,7 @@ public class Constants {
     public static final String POSTER_PATH = "poster_path";
     public static final String SYNOPSIS = "overview";
     public static final String RATING = "vote_average";
-    public static final String RATING_COUNT = "vote_count";
+    public static final String VOTE_COUNT = "vote_count";
     public static final String POPULARITY = "popularity";
 
     public static final String STATUS_CODE = "status_code";
