@@ -1,7 +1,7 @@
 package com.example.forrest.popularmovies;
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.graphics.Bitmap;
+import android.util.ArrayMap;
 
 import java.util.Date;
 
@@ -9,10 +9,10 @@ import java.util.Date;
  * This class represents a movie, which have an ID, a title, synopsis,
  * poster, etc.
  */
-public class Movie implements Parcelable {
+public class Movie {
 
     /* id */
-    private String id;
+    private long id;
 
     /* title */
     private String mTitle;
@@ -26,7 +26,7 @@ public class Movie implements Parcelable {
     /* runtime */
     private int mDuration = -1;
 
-    /* poster_path or backdrop_path */
+    /* poster_path */
     private String mPosterPath;
 
     /* overview */
@@ -41,13 +41,18 @@ public class Movie implements Parcelable {
     /* popularity */
     private double mPopularity = -1;
 
+    private Bitmap mPoster;
+
+    private boolean isFavorite = false;
+
+    private ArrayMap<String, String> mTrailers;
+
+    private String mTrailersJson;
+
+    private String mReviewsJson;
 
     public Movie() {
 
-    }
-
-    public Movie(Parcel in) {
-        readFromParcel(in);
     }
 
     public String getTitle() {
@@ -82,11 +87,11 @@ public class Movie implements Parcelable {
         this.mReleaseDate = mReleaseDate;
     }
 
-    public String getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -97,51 +102,6 @@ public class Movie implements Parcelable {
     public void setPosterPath(String mPosterPath) {
         this.mPosterPath = mPosterPath;
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(this.id);
-        dest.writeString(this.mTitle);
-        dest.writeString(this.mPosterPath);
-        dest.writeString(this.mSynopsis);
-        dest.writeDouble(this.mRating);
-        if (this.mReleaseDate != null)
-            dest.writeLong(this.mReleaseDate.getTime());
-        else
-            dest.writeLong(-1);
-
-        dest.writeInt(mDuration);
-
-    }
-
-    private void readFromParcel(Parcel in) {
-        this.id = in.readString();
-        this.mTitle = in.readString();
-        this.mPosterPath = in.readString();
-        this.mSynopsis = in.readString();
-        this.mRating = in.readDouble();
-        long date = in.readLong();
-        if (date != -1)
-            this.mReleaseDate = new Date(date);
-        this.mDuration = in.readInt();
-
-    }
-
-    public static final Parcelable.Creator<Movie> CREATOR
-            = new Parcelable.Creator<Movie>() {
-        public Movie createFromParcel(Parcel in) {
-            return new Movie(in);
-        }
-
-        public Movie[] newArray(int size) {
-            return new Movie[size];
-        }
-    };
 
     public int getDuration() {
         return mDuration;
@@ -173,5 +133,45 @@ public class Movie implements Parcelable {
 
     public void setPopularity(double mPopularity) {
         this.mPopularity = mPopularity;
+    }
+
+    public boolean isFavorite() {
+        return isFavorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        isFavorite = favorite;
+    }
+
+    public ArrayMap<String, String> getTrailers() {
+        return mTrailers;
+    }
+
+    public void setTrailers(ArrayMap<String, String> mTrailers) {
+        this.mTrailers = mTrailers;
+    }
+
+    public String getTrailersJson() {
+        return mTrailersJson;
+    }
+
+    public void setTrailersJson(String mTrailerJson) {
+        this.mTrailersJson = mTrailerJson;
+    }
+
+    public String getReviewsJson() {
+        return mReviewsJson;
+    }
+
+    public void setReviewsJson(String mReviewsJson) {
+        this.mReviewsJson = mReviewsJson;
+    }
+
+    public Bitmap getPoster() {
+        return mPoster;
+    }
+
+    public void setPoster(Bitmap mPoster) {
+        this.mPoster = mPoster;
     }
 }

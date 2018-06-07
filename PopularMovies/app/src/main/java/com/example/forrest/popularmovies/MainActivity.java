@@ -3,51 +3,59 @@ package com.example.forrest.popularmovies;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.example.forrest.popularmovies.Utils.Constants;
 import com.example.forrest.popularmovies.Utils.NetworkUtils;
-import com.example.forrest.popularmovies.Utils.TMDBJsonLoader;
-import com.example.forrest.popularmovies.Utils.TMDBJsonUtils;
-
-import org.json.JSONException;
+import com.example.forrest.popularmovies.adapters.FavoriteMoviesListAdapter;
+import com.example.forrest.popularmovies.adapters.MoviesListOnClickHandler;
+import com.example.forrest.popularmovies.adapters.TmdbMoviesListAdapter;
+import com.example.forrest.popularmovies.loaders.DatabaseLoaderCallbacks;
+import com.example.forrest.popularmovies.loaders.MoviesJsonLoaderCallbacks;
 
 import java.net.URL;
-import java.util.ArrayList;
+
+import static com.example.forrest.popularmovies.Utils.Constants.TMDB_URL_EXTRA;
 
 /**
  * This is the activity that shows the list of Movies (posters)
  */
 public class MainActivity extends AppCompatActivity
-        implements MoviesAdapter.MoviesAdapterOnClickHandler,
-        LoaderManager.LoaderCallbacks<String> {
+        implements MoviesListOnClickHandler {
 
-    private static final String TAG = "PopularMovies";
+    private static final String SORT_BY_EXTRA = "sort_by";
+    private static final int TMDB_JSON_LOADER = 25;
+    private static final int DATABASE_LOADER = 26;
 
     /* Number of columns in the grid */
     private static final int NUM_COLUMNS = 2;
 
-    /* RecyclerView Adapter */
-    private MoviesAdapter mAdapter;
-
     /* Determine the sort order of the movie list */
-    private String mSortBy = Constants.ORDER_TOP_RATED;
+    private int mShowOption = Constants.SHOW_TOP_RATED;
 
-    private static final String SORT_BY_EXTRA = "sort_by";
+    /* RecyclerView adapter to handle movies list.
+    * Can be TmdbMoviesListAdapter or FavoriteMoviesListAdapter.
+    * */
+    private FavoriteMoviesListAdapter mFavoritesAdapter;
+    private TmdbMoviesListAdapter mTmdbListAdapter;
 
-    private static final String TMDB_URL_EXTRA = "db_url";
+    /**
+     * Callbacks for the loaders.
+     * Can be from class DatabaseLoaderCallbacks or
+     * MoviesJsonLoaderCallbacks.
+     */
+    private DatabaseLoaderCallbacks mDatabaseLoaderCallbacks;
+    private MoviesJsonLoaderCallbacks mMoviesJsonLoaderCallbacks;
 
-    private static final int TMDB_JSON_LOADER = 25;
+
+    /* The RecyclerView to list the movies. */
+    private RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,51 +63,98 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        RecyclerView moviesListRv = findViewById(R.id.rv_movies_grid);
-
-        GridLayoutManager layoutManager = new GridLayoutManager(this, NUM_COLUMNS);
-        moviesListRv.setLayoutManager(layoutManager);
-
-        /* The Adapter is responsible for displaying each item in the list. */
-        mAdapter = new MoviesAdapter(this);
-
-        moviesListRv.setAdapter(mAdapter);
-
+        /* Get the last option selected by user.
+        * TODO Use shared preferences to save this.
+        * */
         if (savedInstanceState != null) {
-            this.mSortBy = savedInstanceState.getString(SORT_BY_EXTRA);
+            this.mShowOption = savedInstanceState.getInt(SORT_BY_EXTRA);
         }
 
-        /* Load the data */
-        URL url;
-        if (mSortBy.equals(Constants.ORDER_TOP_RATED))
-            url = NetworkUtils.getTopRatedMoviesUrl();
-        else
-            url = NetworkUtils.getPopularMoviesUrl();
+        mRecyclerView = findViewById(R.id.rv_movies_grid);
 
+        /* Use the GridLayout to display the movies in columns. */
+        GridLayoutManager layoutManager = new GridLayoutManager(this, NUM_COLUMNS);
+        mRecyclerView.setLayoutManager(layoutManager);
+
+        /* Initialize the adapters. */
+        mFavoritesAdapter = new FavoriteMoviesListAdapter(this,this);
+        mTmdbListAdapter = new TmdbMoviesListAdapter(this, this);
+
+        /* Set the current adapter based on the selected
+        option (top rated, most popular or favorites). */
+        setAdapter();
+
+        /* Create the loaders and start the right one based on
+        * the selected option (top rated, most popular or favorites). */
+        initializeLoader();
+    }
+
+    /** The Adapter is responsible for displaying each item in the list.
+     * This method will set the right adapter for the user selected option.
+     */
+    private void setAdapter() {
+        switch (mShowOption) {
+            case Constants.SHOW_FAVORITES:
+                mRecyclerView.setAdapter(mFavoritesAdapter);
+                break;
+            case Constants.SHOW_POPULAR:
+            case Constants.SHOW_TOP_RATED:
+                mRecyclerView.setAdapter(mTmdbListAdapter);
+                break;
+        }
+
+    }
+
+    /**
+     * NOTES:
+     * initLoader:
+     *    - If the loader does not exist, create a new one by calling onCreateLoader().
+     *    - If the loader already exist, it is reused. If it have already generated data,
+     *    the system calls onLoadFinished() immediately (the loader does not lose the data).
+     *
+     */
+    private void initializeLoader() {
         Bundle bundle = new Bundle();
-        bundle.putSerializable(TMDB_URL_EXTRA, url);
-        getSupportLoaderManager().initLoader(TMDB_JSON_LOADER, bundle, this);
+        mDatabaseLoaderCallbacks = new DatabaseLoaderCallbacks(this, mFavoritesAdapter);
+        mMoviesJsonLoaderCallbacks = new MoviesJsonLoaderCallbacks(this, mTmdbListAdapter);
 
+        switch (mShowOption) {
+            case Constants.SHOW_FAVORITES:
+                getSupportLoaderManager().initLoader(DATABASE_LOADER, bundle, mDatabaseLoaderCallbacks);
+                break;
+
+            case Constants.SHOW_POPULAR:
+            case Constants.SHOW_TOP_RATED:
+                /* Set the right URL. */
+                URL url;
+                if (mShowOption == Constants.SHOW_TOP_RATED)
+                    url = NetworkUtils.getTopRatedMoviesUrl();
+                else
+                    url = NetworkUtils.getPopularMoviesUrl();
+                bundle.putSerializable(Constants.TMDB_URL_EXTRA, url);
+                getSupportLoaderManager().initLoader(TMDB_JSON_LOADER, bundle, mMoviesJsonLoaderCallbacks);
+                break;
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-
-        outState.putString(SORT_BY_EXTRA, mSortBy);
+        outState.putInt(SORT_BY_EXTRA, mShowOption);
     }
+
 
     /**
      * Handles click event in movie posters.
      * It will launch the activity with movie details.
-     * @param movie the movie clicked
+     * @param movieId the movie clicked
      */
     @Override
-    public void onClick(Movie movie) {
+    public void onClick(long movieId) {
         Context context = this;
         Class destinationClass = MovieActivity.class;
         Intent intentMovieActivity = new Intent(context, destinationClass);
-        intentMovieActivity.putExtra(Constants.EXTRA_MOVIE_ID, movie.getId());
+        intentMovieActivity.putExtra(Constants.EXTRA_MOVIE_ID, movieId);
         startActivity(intentMovieActivity);
     }
 
@@ -117,80 +172,58 @@ public class MainActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        String sort = mSortBy;
+        int sort = mShowOption;
 
         if (id == R.id.action_most_pop) {
-            sort = Constants.ORDER_TOP_RATED;
+            sort = Constants.SHOW_POPULAR;
         } else if (id == R.id.action_top_rated) {
-            sort = Constants.ORDER_POPULAR;
+            sort = Constants.SHOW_TOP_RATED;
+        } else if (id == R.id.action_favorites) {
+            sort = Constants.SHOW_FAVORITES;
         }
 
         /* Sort order changed? */
-        if (!mSortBy.equals(sort)) {
-            mSortBy = sort;
+        if (mShowOption != sort) {
+            mShowOption = sort;
             updateMovieList();
         }
+
         return super.onOptionsItemSelected(item);
     }
 
-
     /**
-     * Call the AsyncTask that will download the movies data and
-     * update the RecyclerView adapter with the new data.
+     * Restart the loader to update the movies list according to the user selection.
+     * Notes:
+     * About restartLoader():
+     *       - If the loader with the given ID exists, it will restart the loader and replace
+     *       its data.
+     *       - If the loader does not exist, it starts a new loader.
      */
     private void updateMovieList() {
+
         LoaderManager loaderManager = getSupportLoaderManager();
-        URL url;
-        if (mSortBy.equals(Constants.ORDER_TOP_RATED))
-            url = NetworkUtils.getTopRatedMoviesUrl();
-        else
-            url = NetworkUtils.getPopularMoviesUrl();
 
-        Bundle bundle = new Bundle();
-        bundle.putSerializable(TMDB_URL_EXTRA, url);
+        // Set the correct adapter.
+        setAdapter();
 
-        loaderManager.restartLoader(TMDB_JSON_LOADER, bundle, this);
-    }
+        switch (mShowOption) {
+            case Constants.SHOW_FAVORITES:
+                /* Get movies from local Database */
+                loaderManager.restartLoader(DATABASE_LOADER, new Bundle(), mDatabaseLoaderCallbacks);
+                break;
+            default: // SHOW_POPULAR or SHOW_TOP_RATED
+                /* Get movies from server */
+                URL url;
+                if (mShowOption == Constants.SHOW_TOP_RATED)
+                    url = NetworkUtils.getTopRatedMoviesUrl();
+                else
+                    url = NetworkUtils.getPopularMoviesUrl();
 
+                Bundle bundle = new Bundle();
+                bundle.putSerializable(TMDB_URL_EXTRA, url);
 
-
-/*=============================== LoaderCallbacks ===============================*/
-    @NonNull
-    @Override
-    public Loader<String> onCreateLoader(int id, @Nullable final Bundle args) {
-
-        URL url = null;
-
-        if (args != null) {
-            url = (URL) args.getSerializable(TMDB_URL_EXTRA);
+                loaderManager.restartLoader(TMDB_JSON_LOADER, bundle, mMoviesJsonLoaderCallbacks);
+                break;
         }
-        return new TMDBJsonLoader(this, url);
     }
-
-    @Override
-    public void onLoadFinished(@NonNull Loader<String> loader, String data) {
-        /* If we got data, update to adapter. */
-        if (data != null) {
-            ArrayList<Movie> moviesList;
-            try {
-                moviesList = TMDBJsonUtils.getMoviesFromJsonList(data);
-                mAdapter.setMoviesList(null);
-                mAdapter.setMoviesList(moviesList);
-            } catch (JSONException e) {
-                Log.d(TAG, "Error parsing JSON");
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-    @Override
-    public void onLoaderReset(@NonNull Loader<String> loader) {
-        /*
-         * We aren't using this method in our example application, but we are required to Override
-         * it to implement the LoaderCallbacks<String> interface
-         */
-    }
-/*============================= LoaderCallbacks End =============================*/
-
 }

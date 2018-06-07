@@ -5,5 +5,8 @@
 
     <string name="action_most_pop">Most Popular</string>
     <string name="action_top_rated">Top Rated</string>
+    <string name="action_favorites">Favorites</string>
+    <string name="error_get_movie_list">Error getting movie list.</string>
+    <string name="error_get_movie_details">Error getting movie details.</string>
 
 </resources>

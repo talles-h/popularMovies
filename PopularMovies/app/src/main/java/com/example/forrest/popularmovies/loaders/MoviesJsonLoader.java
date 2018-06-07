@@ -1,22 +1,26 @@
-package com.example.forrest.popularmovies.Utils;
+package com.example.forrest.popularmovies.loaders;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
 
+import com.example.forrest.popularmovies.Utils.NetworkUtils;
+
 import java.io.IOException;
 import java.net.URL;
 
-public class TMDBJsonLoader extends AsyncTaskLoader<String> {
+public class MoviesJsonLoader extends AsyncTaskLoader<String> {
+
+    public static final String TAG = MoviesJsonLoader.class.getSimpleName();
+
     String mMovieDbJsonRes;
     URL mURL;
 
-    public static final String TAG = TMDBJsonLoader.class.getSimpleName();
 
-    public TMDBJsonLoader(Context context, URL url) {
+    public MoviesJsonLoader(Context context, URL url) {
         super(context);
-        Log.d(TAG, "TMDBJsonLoader constructor");
+        Log.d(TAG, "MoviesJsonLoader constructor");
         mURL = url;
         mMovieDbJsonRes = null;
     }

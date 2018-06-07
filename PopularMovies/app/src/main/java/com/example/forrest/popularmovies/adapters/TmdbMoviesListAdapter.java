@@ -1,6 +1,9 @@
-package com.example.forrest.popularmovies;
+package com.example.forrest.popularmovies.adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,38 +11,38 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.example.forrest.popularmovies.Movie;
+import com.example.forrest.popularmovies.R;
+import com.example.forrest.popularmovies.Utils.DbUtils;
 import com.example.forrest.popularmovies.Utils.NetworkUtils;
-
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
 
-public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewHolder> {
+public class TmdbMoviesListAdapter
+        extends RecyclerView.Adapter<TmdbMoviesListAdapter.MovieViewHolder> {
 
-    private static final String TAG = MoviesAdapter.class.getSimpleName();
+    private static final String TAG = FavoriteMoviesListAdapter.class.getSimpleName();
+
+    private final Context mContext;
 
     /* List of Movies */
     private ArrayList<Movie> mMovieList;
 
     /* To handle click in movies posters. */
-    private MoviesAdapterOnClickHandler mClickHandler;
-
-    /**
-     * The interface that receives onClick messages.
-     */
-    public interface MoviesAdapterOnClickHandler {
-        void onClick(Movie movie);
-    }
-
+    private MoviesListOnClickHandler mClickHandler;
 
     /**
      * Constructor. Received the click handler.
      * @param clickHandler
      */
-    public MoviesAdapter(MoviesAdapterOnClickHandler clickHandler) {
+    public TmdbMoviesListAdapter(@NonNull Context context, MoviesListOnClickHandler clickHandler) {
+        mContext = context;
         mMovieList = null;
         mClickHandler = clickHandler;
     }
+
 
     /**
      * Set the list of Movies to be displayed.
@@ -49,6 +52,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
         mMovieList = movies;
         notifyDataSetChanged();
     }
+
 
     /**
      * @return The current number of movies in the list.
@@ -60,24 +64,29 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
         return mMovieList.size();
     }
 
+
     @Override
-    public MovieViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
+    public TmdbMoviesListAdapter.MovieViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         int layoutIdForListItem = R.layout.movies_list_item;
-        LayoutInflater inflater = LayoutInflater.from(context);
+        LayoutInflater inflater = LayoutInflater.from(mContext);
         boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
-        MovieViewHolder viewHolder = new MovieViewHolder(view);
+        TmdbMoviesListAdapter.MovieViewHolder viewHolder = new TmdbMoviesListAdapter.MovieViewHolder(view);
 
         return viewHolder;
     }
 
+
     @Override
-    public void onBindViewHolder(MovieViewHolder holder, int position) {
-        /* Pass the Movie object for this position to the holder object. */
-        holder.bind(mMovieList.get(position));
+    public void onBindViewHolder(TmdbMoviesListAdapter.MovieViewHolder holder, int position) {
+
+        String posterPath = mMovieList.get(position).getPosterPath();
+
+        /* Pass the Movie poster path. */
+        holder.bind(posterPath);
     }
+
 
     public class MovieViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
@@ -91,9 +100,10 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
         }
 
         /* Bind the poster image to the ImageView. */
-        void bind(Movie movie) {
+        void bind(String posterPath) {
             /* Load movie poster image */
-            String posterURL = NetworkUtils.buildPosterURL(movie.getPosterPath()).toString();
+            /* TODO In case the load fails, I should load an image indicating error. */
+            String posterURL = NetworkUtils.buildPosterURL(posterPath).toString();
             Picasso.with(mMovieImageView.getContext()).load(posterURL).into(mMovieImageView);
         }
 
@@ -102,7 +112,8 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MovieViewH
         public void onClick(View v) {
             Log.d(TAG, "MovieViewHolder.onclick");
             int position = getAdapterPosition();
-            mClickHandler.onClick(mMovieList.get(position));
+            long movieId = mMovieList.get(position).getId();
+            mClickHandler.onClick(movieId);
         }
     }
 }
